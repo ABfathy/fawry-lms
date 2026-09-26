@@ -38,6 +38,16 @@ public class Enrollment {
 
     protected Enrollment() {}
 
+    public Enrollment(Student student, Course course, BigDecimal price, String paymentReference,
+                      EnrollmentStatus status, LocalDateTime enrollmentDate) {
+        this.student = student;
+        this.course = course;
+        this.price = price;
+        this.paymentReference = paymentReference;
+        this.status = status;
+        this.enrollmentDate = enrollmentDate;
+    }
+
     public Long getId() {
         return id;
     }

@@ -25,4 +25,12 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
+    @ExceptionHandler
+    public ProblemDetail handleIncorrectPaymentStatus(IncorrectPaymentStatus e){
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,e.getMessage());
+        problem.setTitle("Incorrect Payment Status");
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
 }

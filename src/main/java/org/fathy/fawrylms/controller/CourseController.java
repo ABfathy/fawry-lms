@@ -17,7 +17,7 @@ public class CourseController {
     public CourseController(CourseService courseService) {
         this.courseService = courseService;
     }
-    
+
     @GetMapping("/{id}")
     public CourseResponse getCourse(@PathVariable Long id){
         return courseService.getCourse(id);
