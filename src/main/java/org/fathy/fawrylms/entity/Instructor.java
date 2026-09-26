@@ -19,6 +19,11 @@ public class Instructor {
 
     protected Instructor() {}
 
+    public Instructor(String name, String email) {
+        this.name = name;
+        this.email = email;
+    }
+
     public Long getId() {
         return id;
     }

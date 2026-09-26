@@ -31,6 +31,14 @@ public class Course {
 
     protected Course() {}
 
+    public Course(String courseCode, String name, String description, Instructor instructor, BigDecimal price) {
+        this.courseCode = courseCode;
+        this.name = name;
+        this.description = description;
+        this.instructor = instructor;
+        this.price = price;
+    }
+
 
 
     public Long getId() {
