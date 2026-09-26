@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: fawry-lms
+  datasource:
+    url: "jdbc:postgresql://localhost:5432/fawry_lms"
+    username: "postgres"
+    password: "postgres"
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
