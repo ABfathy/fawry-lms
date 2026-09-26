@@ -31,6 +31,7 @@ public class StudentService {
     }
 
 
+    @Transactional(readOnly = true)
     public StudentResponse getStudent(Long id) {
 
       Student student = studentRepository.findById(id).orElseThrow(

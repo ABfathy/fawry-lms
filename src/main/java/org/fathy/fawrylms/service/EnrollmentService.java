@@ -6,7 +6,7 @@ import org.fathy.fawrylms.dto.payment.PaymentWebhookRequest;
 import org.fathy.fawrylms.entity.Course;
 import org.fathy.fawrylms.entity.Enrollment;
 import org.fathy.fawrylms.entity.Student;
-import org.fathy.fawrylms.exception.IncorrectPaymentStatus;
+import org.fathy.fawrylms.exception.IncorrectPaymentStatusException;
 import org.fathy.fawrylms.exception.ResourceConflictException;
 import org.fathy.fawrylms.exception.ResourceNotFoundException;
 import org.fathy.fawrylms.repository.CourseRepository;
@@ -45,11 +45,14 @@ public class EnrollmentService {
                 () -> new ResourceNotFoundException("Course not found")
         );
 
-        if(enrollmentRepository.existsByCourseIdAndStudentId(course.getId(), student.getId())){
+        if (enrollmentRepository.existsByCourseIdAndStudentIdAndStatusIn(
+                course.getId(),
+                student.getId(),
+                List.of(EnrollmentStatus.PENDING_PAYMENT, EnrollmentStatus.ACTIVE))) {
             throw new ResourceConflictException("Student already enrolled");
         }
 
-        String paymentReference = "FAWRY-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String paymentReference = "FAWRY-" + UUID.randomUUID().toString().toUpperCase();
 
         Enrollment enrollment = enrollmentRepository.save( new Enrollment(student,course,course.getPrice(),paymentReference,
                 EnrollmentStatus.PENDING_PAYMENT, LocalDateTime.now()));
@@ -70,11 +73,11 @@ public class EnrollmentService {
         } else if(paymentWebhookRequest.status().equalsIgnoreCase("FAILED")){
             enrollment.setStatus(EnrollmentStatus.CANCELED);
         } else {
-            throw new IncorrectPaymentStatus("Given Payment status is incorrect");
+            throw new IncorrectPaymentStatusException("Given Payment status is incorrect");
         }
 
         return new EnrollmentResponse(enrollment.getId(),
-                enrollment.getStudent().getId(), enrollment.getCourse().getId(), enrollment.getCourse().getPrice(),
+                enrollment.getStudent().getId(), enrollment.getCourse().getId(), enrollment.getPrice(),
                 enrollment.getEnrollmentDate(), enrollment.getStatus(), enrollment.getPaymentReference());
     }
 

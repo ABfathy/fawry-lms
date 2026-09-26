@@ -39,6 +39,7 @@ public class CourseService {
                 course.getDescription(), course.getPrice(), instructor.getId());
     }
 
+    @Transactional(readOnly = true)
     public CourseResponse getCourse(Long id){
         Course course = courseRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Course not found")

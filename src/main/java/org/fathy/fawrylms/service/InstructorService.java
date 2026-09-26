@@ -33,6 +33,7 @@ public class InstructorService {
     }
 
 
+    @Transactional(readOnly = true)
     public InstructorResponse getInstructor(Long id){
         Instructor instructor = instructorRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Instructor not found")

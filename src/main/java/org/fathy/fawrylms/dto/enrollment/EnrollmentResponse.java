@@ -1,6 +1,5 @@
 package org.fathy.fawrylms.dto.enrollment;
 
-import org.fathy.fawrylms.entity.Enrollment;
 import org.fathy.fawrylms.types.EnrollmentStatus;
 
 import java.math.BigDecimal;
