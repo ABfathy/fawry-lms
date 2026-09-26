@@ -110,4 +110,42 @@ public class EnrollmentService {
                 ))
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<EnrollmentResponse> getAllEnrollments() {
+        return enrollmentRepository.findAll().stream()
+                .map(enrollment -> new EnrollmentResponse(
+                        enrollment.getId(),
+                        enrollment.getStudent().getId(),
+                        enrollment.getCourse().getId(),
+                        enrollment.getPrice(),
+                        enrollment.getEnrollmentDate(),
+                        enrollment.getStatus(),
+                        enrollment.getPaymentReference()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public EnrollmentResponse cancelEnrollment(Long id) {
+        Enrollment enrollment = enrollmentRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Enrollment not found with id: " + id)
+        );
+
+        if (enrollment.getStatus() == EnrollmentStatus.CANCELED) {
+            throw new ResourceConflictException("Enrollment is already canceled");
+        }
+
+        enrollment.setStatus(EnrollmentStatus.CANCELED);
+
+        return new EnrollmentResponse(
+                enrollment.getId(),
+                enrollment.getStudent().getId(),
+                enrollment.getCourse().getId(),
+                enrollment.getPrice(),
+                enrollment.getEnrollmentDate(),
+                enrollment.getStatus(),
+                enrollment.getPaymentReference()
+        );
+    }
 }

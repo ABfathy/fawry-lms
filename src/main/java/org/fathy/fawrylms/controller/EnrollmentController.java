@@ -26,12 +26,20 @@ public class EnrollmentController {
     }
 
     @GetMapping
-    public List<EnrollmentResponse> getEnrollmentsByStudentId(@RequestParam Long studentId) {
-        return enrollmentService.getEnrollmentsByStudentId(studentId);
+    public List<EnrollmentResponse> getEnrollments(@RequestParam(required = false) Long studentId) {
+        if (studentId != null) {
+            return enrollmentService.getEnrollmentsByStudentId(studentId);
+        }
+        return enrollmentService.getAllEnrollments();
     }
 
     @GetMapping("/{id}")
     public EnrollmentResponse getEnrollment(@PathVariable Long id) {
         return enrollmentService.getEnrollment(id);
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public EnrollmentResponse cancelEnrollment(@PathVariable Long id) {
+        return enrollmentService.cancelEnrollment(id);
     }
 }
