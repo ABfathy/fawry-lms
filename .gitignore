@@ -36,6 +36,9 @@ build/
 .env
 .env.*
 !.env.example
+# Local Postman environment contains generated secrets and captured access tokens.
+Postman/*.postman_environment.json
+!Postman/*.example.postman_environment.json
 application-local.yaml
 application-local.yml
 *.pem
