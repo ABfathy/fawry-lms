@@ -10,6 +10,7 @@ import org.fathy.fawrylms.exception.ResourceNotFoundException;
 import org.fathy.fawrylms.repository.CourseRepository;
 import org.fathy.fawrylms.repository.EnrollmentRepository;
 import org.fathy.fawrylms.repository.InstructorRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,15 +23,18 @@ public class CourseService {
     private final InstructorRepository instructorRepository;
     private final EnrollmentRepository enrollmentRepository;
 
-    public CourseService(CourseRepository courseRepository,
-                         InstructorRepository instructorRepository,
-                         EnrollmentRepository enrollmentRepository) {
+    public CourseService(
+            CourseRepository courseRepository,
+            InstructorRepository instructorRepository,
+            EnrollmentRepository enrollmentRepository
+    ) {
         this.courseRepository = courseRepository;
         this.instructorRepository = instructorRepository;
         this.enrollmentRepository = enrollmentRepository;
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('INSTRUCTOR') and @securityService.isInstructorSelf(#createCourseRequest.instructorId()))")
     public CourseResponse createCourse(CreateCourseRequest createCourseRequest) {
         if (courseRepository.existsByCourseCode(createCourseRequest.courseCode())) {
             throw new ResourceConflictException("Course code already exists");
@@ -59,6 +63,7 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("isAuthenticated()")
     public CourseResponse getCourse(Long id) {
         Course course = courseRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Course not found")
@@ -75,6 +80,7 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("isAuthenticated()")
     public List<CourseResponse> getAllCourses() {
         return courseRepository.findAll().stream()
                 .map(c -> new CourseResponse(
@@ -89,6 +95,7 @@ public class CourseService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('INSTRUCTOR') and @securityService.isCourseOwner(#id) and @securityService.isInstructorSelf(#request.instructorId()))")
     public CourseResponse updateCourse(Long id, UpdateCourseRequest request) {
         Course course = courseRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Course not found")
@@ -114,6 +121,7 @@ public class CourseService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('INSTRUCTOR') and @securityService.isCourseOwner(#id))")
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Course not found")

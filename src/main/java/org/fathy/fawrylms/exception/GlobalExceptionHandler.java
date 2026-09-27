@@ -60,4 +60,28 @@ public class GlobalExceptionHandler {
         problem.setProperty("timestamp", Instant.now());
         return problem;
     }
+
+    @ExceptionHandler
+    public ProblemDetail handleBadCredentialsException(org.springframework.security.authentication.BadCredentialsException e){
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        problem.setTitle("Authentication Failed");
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler
+    public ProblemDetail handleIllegalArgumentException(IllegalArgumentException e){
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+        problem.setTitle("Bad Request");
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
+
+    @ExceptionHandler
+    public ProblemDetail handleAccessDeniedException(org.springframework.security.access.AccessDeniedException e){
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage());
+        problem.setTitle("Forbidden");
+        problem.setProperty("timestamp", Instant.now());
+        return problem;
+    }
 }

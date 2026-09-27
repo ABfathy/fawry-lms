@@ -2,10 +2,19 @@ spring:
   application:
     name: fawry-lms
   datasource:
-    url: "jdbc:postgresql://localhost:5432/fawry_lms"
-    username: "postgres"
-    password: "postgres"
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/fawry_lms}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  issuer: ${JWT_ISSUER:https://fawry-lms.local}
+  audience: ${JWT_AUDIENCE:fawry-lms-api}
+  expiration-ms: ${JWT_EXPIRATION_MS:900000}
+
+payment:
+  webhook-secret: ${PAYMENT_WEBHOOK_SECRET}

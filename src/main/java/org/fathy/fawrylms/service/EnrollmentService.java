@@ -13,6 +13,7 @@ import org.fathy.fawrylms.repository.CourseRepository;
 import org.fathy.fawrylms.repository.EnrollmentRepository;
 import org.fathy.fawrylms.repository.StudentRepository;
 import org.fathy.fawrylms.types.EnrollmentStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,16 +27,18 @@ public class EnrollmentService {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
 
-
-    public EnrollmentService(EnrollmentRepository enrollmentRepository, StudentRepository studentRepository,
-                             CourseRepository courseRepository) {
+    public EnrollmentService(
+            EnrollmentRepository enrollmentRepository,
+            StudentRepository studentRepository,
+            CourseRepository courseRepository
+    ) {
         this.enrollmentRepository = enrollmentRepository;
         this.studentRepository = studentRepository;
         this.courseRepository = courseRepository;
     }
 
-
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('STUDENT') and @securityService.isStudentSelf(#enrollmentRequest.studentId()))")
     public EnrollmentResponse createEnrollment(CreateEnrollmentRequest enrollmentRequest) {
         Student student = studentRepository.findById(enrollmentRequest.studentId()).orElseThrow(
                 () -> new ResourceNotFoundException("Student not found")
@@ -54,13 +57,11 @@ public class EnrollmentService {
 
         String paymentReference = "FAWRY-" + UUID.randomUUID().toString().toUpperCase();
 
-        Enrollment enrollment = enrollmentRepository.save( new Enrollment(student,course,course.getPrice(),paymentReference,
+        Enrollment enrollment = enrollmentRepository.save(new Enrollment(student, course, course.getPrice(), paymentReference,
                 EnrollmentStatus.PENDING_PAYMENT, LocalDateTime.now()));
 
-
         return new EnrollmentResponse(enrollment.getId(), student.getId(), course.getId(),
-                course.getPrice(), enrollment.getEnrollmentDate(),enrollment.getStatus(), paymentReference);
-
+                course.getPrice(), enrollment.getEnrollmentDate(), enrollment.getStatus(), paymentReference);
     }
 
     @Transactional
@@ -68,20 +69,29 @@ public class EnrollmentService {
         Enrollment enrollment = enrollmentRepository.findByPaymentReference(paymentWebhookRequest
                 .paymentReference()).orElseThrow(() -> new ResourceNotFoundException("Enrollment not found"));
 
-        if (paymentWebhookRequest.status().equalsIgnoreCase("PAID")){
-            enrollment.setStatus(EnrollmentStatus.ACTIVE);
-        } else if(paymentWebhookRequest.status().equalsIgnoreCase("FAILED")){
-            enrollment.setStatus(EnrollmentStatus.CANCELED);
+        EnrollmentStatus requestedStatus;
+        if (paymentWebhookRequest.status().equalsIgnoreCase("PAID")) {
+            requestedStatus = EnrollmentStatus.ACTIVE;
+        } else if (paymentWebhookRequest.status().equalsIgnoreCase("FAILED")) {
+            requestedStatus = EnrollmentStatus.CANCELED;
         } else {
             throw new IncorrectPaymentStatusException("Given Payment status is incorrect");
         }
 
-        return new EnrollmentResponse(enrollment.getId(),
-                enrollment.getStudent().getId(), enrollment.getCourse().getId(), enrollment.getPrice(),
-                enrollment.getEnrollmentDate(), enrollment.getStatus(), enrollment.getPaymentReference());
+        if (enrollment.getStatus() != EnrollmentStatus.PENDING_PAYMENT) {
+            if (enrollment.getStatus() != requestedStatus) {
+                throw new ResourceConflictException("Payment status is already final");
+            }
+            return toResponse(enrollment);
+        }
+
+        enrollment.setStatus(requestedStatus);
+
+        return toResponse(enrollment);
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN') or @securityService.canViewEnrollment(#id)")
     public EnrollmentResponse getEnrollment(Long id) {
         Enrollment enrollment = enrollmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Enrollment not found")
@@ -93,6 +103,7 @@ public class EnrollmentService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('STUDENT') and @securityService.isStudentSelf(#studentId))")
     public List<EnrollmentResponse> getEnrollmentsByStudentId(Long studentId) {
         if (!studentRepository.existsById(studentId)) {
             throw new ResourceNotFoundException("Student not found");
@@ -112,6 +123,7 @@ public class EnrollmentService {
     }
 
     @Transactional(readOnly = true)
+    @PreAuthorize("hasRole('ADMIN')")
     public List<EnrollmentResponse> getAllEnrollments() {
         return enrollmentRepository.findAll().stream()
                 .map(enrollment -> new EnrollmentResponse(
@@ -127,6 +139,7 @@ public class EnrollmentService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('STUDENT') and @securityService.isEnrollmentOwner(#id))")
     public EnrollmentResponse cancelEnrollment(Long id) {
         Enrollment enrollment = enrollmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Enrollment not found with id: " + id)
@@ -138,6 +151,18 @@ public class EnrollmentService {
 
         enrollment.setStatus(EnrollmentStatus.CANCELED);
 
+        return new EnrollmentResponse(
+                enrollment.getId(),
+                enrollment.getStudent().getId(),
+                enrollment.getCourse().getId(),
+                enrollment.getPrice(),
+                enrollment.getEnrollmentDate(),
+                enrollment.getStatus(),
+                enrollment.getPaymentReference()
+        );
+    }
+
+    private EnrollmentResponse toResponse(Enrollment enrollment) {
         return new EnrollmentResponse(
                 enrollment.getId(),
                 enrollment.getStudent().getId(),
